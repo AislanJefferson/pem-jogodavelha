@@ -15,69 +15,157 @@ Autores:
     Willian Klein - williannene1@hotmail.com
 
 """
+import random
 
-#Defino o tabuleiro como uma lista com 9 itens
-# representando o teclado numerico de 1 a 9
-board = []
+def mostraTabuleiro(board):
+	print("   |   |   ")
+	print(" {} | {} | {} ".format(board[7],board[8],board[9]))
+	print("___|___|___")
+	print("   |   |   ")
+	print(" {} | {} | {} ".format(board[4],board[5],board[6]))
+	print("___|___|___")
+	print("   |   |   ")
+	print(" {} | {} | {} ".format(board[1],board[2],board[3]))
+	print("   |   |   ")
 
-#Funcao para preencher com itens vazios, representados por espaco
-# em branco(" "), no tabuleiro vazio
-def setup_board(board):
+def escolheLetra():
+	letter = ' '
+	while not (letter == 'X' or letter == 'O'):
+		letter = raw_input("Voce deseja jogar como X ou O: ").upper()
+	if letter == 'X':
+		return ['X', 'O']
+	else:
+		return ['O', 'X']
+		
+def jogaPrimeiro():
+	if random.randint(0,1) == 0:
+		return 'computer'
+	else:
+		return 'player'
+
+def movimentoPlayer(board):
+	move = ''
+	while move not in ('1 2 3 4 5 6 7 8 9').split() or not verificaEspacoLivre(board, int(move)):
+		print('Qual a sua jogada? (1-9)')
+		move = raw_input()
+	return int(move)
+			
+def fazJogada(board, symbol, move):
+	board[move] = symbol
+
+def jogarNovamente():
+	print('Voce deseja jogar novamente? (Sim ou Nao)')
+	return raw_input().lower().startswith('s')
+
+def montaTabuleiro(board):
 	if(len(board)==0):
 		for i in range(9):
 			board.append(" ")
 
-#Funcao para limpeza do tabuleiro para caso deseje jogar novamente			
-def clean_board(board):
-	for i in range(len(board)):
-		board[i] = " "
+def checaVencedor(board, letter):
+	return((board[7] == letter and board[8] == letter and board[9] == letter) or
+		(board[4] == letter and board[5] == letter and board[6] == letter) or
+		(board[1] == letter and board[2] == letter and board[3] == letter) or
+		(board[7] == letter and board[4] == letter and board[1] == letter) or
+		(board[8] == letter and board[5] == letter and board[2] == letter) or
+		(board[9] == letter and board[6] == letter and board[3] == letter) or
+		(board[7] == letter and board[5] == letter and board[3] == letter) or
+		(board[9] == letter and board[5] == letter and board[1] == letter))
 
-#Inicio das funcoes relativas a mecanica do jogo
+def copiaBoard(board):
+	copyBoard = []
+	for i in board:
+		copyBoard.append(i)
+	return copyBoard
 
-#Imprime na tela o tabuleiro na forma:
-#     |   |   
-#   a | b | c 
-#  ___|___|___
-#     |   |   
-#   d | e | f 
-#  ___|___|___
-#     |   |   
-#   g | h | i 
-#     |   |
-def print_board(board):
-	print("   |   |   ")
-	print(" {} | {} | {} ".format(board[6],board[7],board[8]))
-	print("___|___|___")
-	print("   |   |   ")
-	print(" {} | {} | {} ".format(board[3],board[4],board[5]))
-	print("___|___|___")
-	print("   |   |   ")
-	print(" {} | {} | {} ".format(board[0],board[1],board[2]))
-	print("   |   |   ")
+def verificaEspacoLivre(board, move):
+	return board[move] == ' '
 
-#Funcao que checa se o movimento desejado esta livre ou nao, 
-# por se tratar de uma lista que o indice comeca com zero, 
-# temos de tratar para adaptar ao jogo.
-def is_space_free(board, move):
-	index = move - 1  #Adaptacao do movimento ao indice de board
-	return board[index] == " "
+def escolheMovimentoAleatorio(board, movesList):
+	possibleMoves = []
+	for i in movesList:
+		if verificaEspacoLivre(board, i):
+			possibleMoves.append(i)
+	if len(possibleMoves) != 0:
+		return random.choice(possibleMoves)
+	else:
+		return None
 
-#Funcao que insere o caractere no tabuleiro, por se tratar
-# de uma lista que o indice comeca com zero, temos de tratar
-# para adaptar ao jogo.
-def make_move(board, move, symbol):
-	index = move - 1  #Adaptacao do movimento ao indice de board
-	board[index] = symbol
+def movimentoCPU(board, computerLetter):
+	if computerLetter == 'X':
+		playerLetter = 'O'
+	else:
+		playerLetter = 'X'
 
+	for i in range(1,10):
+		copy = copiaBoard(board)
+		if verificaEspacoLivre(copy, i):
+			fazJogada(copy, computerLetter, i)
+			if checaVencedor(copy, computerLetter):
+				return i
+
+	for i in range(1,10):
+		copy = copiaBoard(board)
+		if  verificaEspacoLivre(copy, i):
+			fazJogada(copy, playerLetter, i)
+			if checaVencedor(copy, playerLetter):
+				return i
+
+	move = escolheMovimentoAleatorio(board, [1,3,7,9])
+	if move != None:
+		return move
+
+	if verificaEspacoLivre(board, 5):
+		return 5
+
+	return escolheMovimentoAleatorio(board, [2,4,6,8])
+
+def boardCheio(board):
+	for i in range(1,10):
+		if verificaEspacoLivre(board, i):
+			return False
+	return True
+
+print ('Bem vindo ao Game da Veia!')						
 #Loop principal
 while(True):
-	#Conteudo desse bloco ateh agora eh apenas para desenvolvimento
-	#Configura o tabuleiro, faz um movimento e imprime na tela
-	#Estou com duvida se crio o board apenas aqui dentro...
-	setup_board(board)
-	make_move(board, 5, "X")
-	print_board(board)
-	# Testa a funcao is_space_free para o primeiro elemento
-	assert not(is_space_free(board,5)), "Item do meio deveria estar ocupado... :("
-	print("OK. A implentar o resto...")
-	break
+	theBoard = [' '] * 10
+	playerLetter, computerLetter = escolheLetra()
+	turn = jogaPrimeiro()
+	print('O ' + turn + ' vai jogar primeiro')
+	gameIsPlaying = True
+	while gameIsPlaying:
+		if turn == 'player':
+			mostraTabuleiro(theBoard)
+			move = movimentoPlayer(theBoard)
+			fazJogada(theBoard, playerLetter, move)
+
+			if checaVencedor(theBoard, playerLetter):
+				mostraTabuleiro(theBoard)
+				print('Parabes! Voce venceu o game!')
+				gameIsPlaying = False
+			else:
+				if boardCheio(theBoard):
+					mostraTabuleiro(theBoard)
+					print('O jogo empatou')
+					break
+				else:
+					turn = 'computer'
+		else:
+			move = movimentoCPU(theBoard, computerLetter)
+			fazJogada(theBoard, computerLetter, move)
+
+			if checaVencedor(theBoard, computerLetter):
+				mostraTabuleiro(theBoard)
+				print('O computador venceu o jogo :(')
+				gameIsPlaying = False
+			else:
+				if boardCheio(theBoard):
+					mostraTabuleiro(theBoard)
+					print('O jogo empatou!')
+					break
+				else:
+					turn = 'player'
+
+	if not jogarNovamente():
+		break
