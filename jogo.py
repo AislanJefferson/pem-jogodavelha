@@ -1,221 +1,137 @@
-#!/usr/bin/env python
-"""Jogo da velha - Aula GIT - PEM
-
-Descricao:
-    Jogo da velha em interface grafica em linha de comando
-     com dois modos: Contra o computador (utilizando o algoritmo minimax)
-     e contra um adversario via rede.
-TODO:
-    -Tudo!
-
-Autores:
-    Aislan Jefferson - aislanjsb@gmail.com
-    Douglas Nickson - douglas.nickson1@gmail.com
-    Laerty Santos - laerty.santos@gmail.com
-    Willian Klein - williannene1@hotmail.com
-
-"""
-#importa a biblioteca random
+# Play tic-tac-toe. The first player will be always X.
+# Each tic-tac-toe board is represented by a sequence of three values:
+# (set of squares that have an X, set of squares that have a y, board's width)
 import random
+import os
+import string
 
-#essas funcoes nao sao necessarias, pos podemos tanto preencher quanto limpar
-#o tabuleiro usando board = [' '] * 10
-'''
-def setup_board(board):
-	if(len(board)==0):
-		for i in range(9):
-			board.append(" ")
+def TicTacToe(X, O, width=3):
+    """Play a tic-tac-toe game between the two given functions. After each
+    turn, yield the new board.
+    Each function should get a tic-tac-toe board and a char - 'X' or 'O',
+    that represents the current turn, and return the number of
+    square where it wants to put a sign.
+    width is the board's width and length - it's 3 as default.
 
-def clean_board(board):
-	for i in range(len(board)):
-		board[i] = " "
-'''
+    X, O -- functions
+    width -- natural number
+    """
+    board = (set(), set(), width)
+    turn = 'X'
+    while result(board) == False:
+        if turn == 'X':
+            board[0].add(X(board, turn))
+        else:
+            board[1].add(O(board, turn))
+        yield board
+        turn = list({'X', 'O'} - set([turn]))[0]
+
+def displayTicTacToe(X, O, width=3):
+    """Play a tic-tac-toe game (see TicTacToe's docstring for explanation) and
+    display the new board to the user when a player plays, and the result of
+    the game after its end.
+
+    X, O - functions
+    width - natural number"""
+    for board in TicTacToe(X, O, width):
+        os.system('cls' if os.name == 'nt' else 'clear')  # clearscreen
+        print str_board(board)
+    winner = result(board)
+    if winner in {'X', 'O'}: print winner + ' won!'
+    elif winner == None: print 'Tie!'
+    else: raise ValueError("The game didn't end")
+
+def result(board):
+    """Return 'X' if X won in the given board, 'O' if O won, None if the game
+    ended with a tie, False if the game didn't end yet, and raise an exception
+    if it looks like X and O won both (the board cannot be reached using a
+    legal game)."""
+    x_squares, o_squares, width = board
+    rows = [{width*row+col+1 for col in range(width)} for row in range(width)]
+    cols = [{width*row+col+1 for row in range(width)} for col in range(width)]
+    diagonals = [{width*i+i+1 for i in range(width)},
+                 {width*i+width-i for i in range(width)}]
+    lines = rows + cols + diagonals
+
+    x_won = any(line.issubset(x_squares) for line in lines)
+    o_won = any(line.issubset(o_squares) for line in lines)
+    if x_won:
+        if o_won:
+            raise ValueError("Illegal board")
+        return 'X'
+    if o_won:
+        return 'O'
+    if x_squares | o_squares == set(range(1, width**2+1)):
+        # Nobody won, but the board is full
+        return None  # Tie
+    return False
+
+def str_board(board):
+    """Return the board in a string representation, to print it."""
+    return_str = ''
+    x_squares, o_squares, width = board
+    for row in range(width):
+        for col in range(width):
+            square = width*row+col+1
+            return_str += 'X' if square in x_squares else 'O' if square in \
+                               o_squares else ' '
+            if col != width-1: return_str += ' | '
+        if row != width-1: return_str += '\n'+'--+-'*(width-1)+'-\n' 
+    return return_str
 
 
-#Imprime na tela o tabuleiro na forma:
-'''
-     |   |   
-   a | b | c 
-  ___|___|___
-     |   |   
-   d | e | f 
-  ___|___|___
-     |   |   
-   g | h | i 
-     |   |
-'''
-def mostraTabuleiro(board):
-	print("   |   |   ")
-	print(" {} | {} | {} ".format(board[7],board[8],board[9]))
-	print("___|___|___")
-	print("   |   |   ")
-	print(" {} | {} | {} ".format(board[4],board[5],board[6]))
-	print("___|___|___")
-	print("   |   |   ")
-	print(" {} | {} | {} ".format(board[1],board[2],board[3]))
-	print("   |   |   ")
+def human_player(board, turn):
+    """Display the board to the user and ask him where does he want to put a
+    sign. Return the square."""
+    x_squares, o_squares, width = board
+    os.system('cls' if os.name == 'nt' else 'clear')  # clear screen
+    print str_board(board)
+    while True:
+        try:
+            square = int(raw_input('Where do you want to add ' + turn + '? '))
+            assert 0 < square <= width**2 and \
+                   square not in x_squares | o_squares
+            return square  # this will happen if there were no exceptions
+        except:
+            print ('You should write an integer between 1 and '+str(width**2)+
+                   ', that represents a blank square.')
 
+def minimax_player(board, turn):
+    """Return a square where it's worthwhile to play according to the minimax
+    algorithm."""
+    return minimax_best_square(board, turn)[0]
 
-#Essa funcao permite que o jogador escolha com qual letra ira jogar
-#e no final retorna uma lista, sendo o primeiro elemento a letra do jogador
-#e o segundo a letra da cpu
-def escolheLetra():
-	letter = ' '
-	while not (letter == 'X' or letter == 'O'):
-		letter = raw_input("Voce deseja jogar como X ou O: ").upper()
-	if letter == 'X':
-		return ['X', 'O']
-	else:
-		return ['O', 'X']
-		
-#escolhe aleatoriamente quem vai ser o primeiro a jogar		
-def jogaPrimeiro():
-	if random.randint(0,1) == 0:
-		return 'computer'
-	else:
-		return 'player'
-		
-#funcao que permite ao jogar fazer seu movimento, a funcao verifica se a opcao
-#escolhida pelo jogador esta entre as opcoes permitadas e verifica se o espaco esta vazio
-def movimentoPlayer(board):
-	move = ''
-	while move not in ('1 2 3 4 5 6 7 8 9').split() or not verificaEspacoLivre(board, int(move)):
-		print('Qual a sua jogada? (1-9)')
-		move = raw_input()
-	return int(move)
+def minimax_score_board(board, turn):
+    """Return 1, 0 or -1 according to the minimax algorithm -- 1 if the player
+    that has the given turn has a winning strategy, 0 if he doesn't have a
+    winning strategy but he has a tie strategy, and -1 if he will lose anyway
+    (assuming his opponent is playing a perfect game)."""
+    if result(board) == turn:
+        return 1
+    if result(board) == None:
+        return 0
+    if result(board) != False:
+        return -1
+    return minimax_best_square(board, turn)[1]
 
-#escreve a letra no tabuleiro			
-def fazJogada(board, symbol, move):
-	board[move] = symbol
+def minimax_best_square(board, turn):
+    """Choose a square where it's worthwhile to play in the given board and
+    turn, and return a tuple of the square's number and it's score according
+    to the minimax algorithm."""
+    x_squares, o_squares, width = board
+    max_score = -2
+    opponent = list({'X', 'O'} - set([turn]))[0]
+    squares = list(set(range(1, width**2+1)) - (x_squares | o_squares))
+    random.shuffle(squares)
+    for square in squares:
+        # Iterate over the blank squares, to get the best square to play
+        new_board = (x_squares | set([square] if turn=='X' else []),) + \
+                    (o_squares | set([square] if turn=='O' else []), width)
+        score = -minimax_score_board(new_board, opponent)
+        if score == 1: return (square, 1)
+        if score > max_score:
+            max_score, max_square = score, square
+    return (max_square, max_score)
 
-#funcao que pergunta se o jogador deseja jogar novamente
-def jogarNovamente():
-	print('Voce deseja jogar novamente? (Sim ou Nao)')
-	return raw_input().lower().startswith('s')
-
-#Essa funcao verifica todas as possibildiades de vitoria e caso tenha vencedor retorna true
-def checaVencedor(board, letter):
-	return((board[7] == letter and board[8] == letter and board[9] == letter) or
-		(board[4] == letter and board[5] == letter and board[6] == letter) or
-		(board[1] == letter and board[2] == letter and board[3] == letter) or
-		(board[7] == letter and board[4] == letter and board[1] == letter) or
-		(board[8] == letter and board[5] == letter and board[2] == letter) or
-		(board[9] == letter and board[6] == letter and board[3] == letter) or
-		(board[7] == letter and board[5] == letter and board[3] == letter) or
-		(board[9] == letter and board[5] == letter and board[1] == letter))
-
-#Essa funcao cria uma copia do tabuleiro
-def copiaBoard(board):
-	copyBoard = []
-	for i in board:
-		copyBoard.append(i)
-	return copyBoard
-
-#Verifica se o espaco selecionado esta vazio e retorna true
-def verificaEspacoLivre(board, move):
-	return board[move] == ' '
-
-#escolhe um movimento valido no tabuleiro
-def escolheMovimentoAleatorio(board, movesList):
-	possibleMoves = []
-	for i in movesList:
-		if verificaEspacoLivre(board, i):
-			possibleMoves.append(i)
-	if len(possibleMoves) != 0:
-		return random.choice(possibleMoves)
-	else:
-		return None
-
-#funcao que define a jogada da cpu, utilizando AI
-def movimentoCPU(board, computerLetter):
-#Dado um tabuleiro e o simbolo do jogador, a funcao determina onde jogar e retorna o movimento
-	if computerLetter == 'X':
-		playerLetter = 'O'
-	else:
-		playerLetter = 'X'
-
-# Aqui esta o algoritmo para a AI do jogo da velha
-# Primeiro, verificamos se é possivel vencer na proxima jogada
-	for i in range(1,10):
-		copy = copiaBoard(board)
-		if verificaEspacoLivre(copy, i):
-			fazJogada(copy, computerLetter, i)
-			if checaVencedor(copy, computerLetter):
-				return i
-				
-# Verifica se o jogador pode vencer na proxima jogada e, entao, o bloqueia
-	for i in range(1,10):
-		copy = copiaBoard(board)
-		if  verificaEspacoLivre(copy, i):
-			fazJogada(copy, playerLetter, i)
-			if checaVencedor(copy, playerLetter):
-				return i
-# Tenta ocupar algum dos cantos, se eles estiverem livres
-	move = escolheMovimentoAleatorio(board, [1,3,7,9])
-	if move != None:
-		return move
-		
-# Tenta ocupar o centro, se ele estiver livre
-	if verificaEspacoLivre(board, 5):
-		return 5
-		
-#ocupa os lados
-	return escolheMovimentoAleatorio(board, [2,4,6,8])
-
-#funcao que verifica se o tabuleiro esta completo e retorna true
-def boardCheio(board):
-	for i in range(1,10):
-		if verificaEspacoLivre(board, i):
-			return False
-	return True
-
-print ('Bem vindo ao Game da Veia!')						
-#Loop principal
-while(True):
-	#reinicia e zera o tabuleiro, eliminando a necessidade de utilizar funcoes
-	theBoard = [' '] * 10
-	playerLetter, computerLetter = escolheLetra()
-	turn = jogaPrimeiro()
-	print('O ' + turn + ' vai jogar primeiro')
-	gameIsPlaying = True
-	while gameIsPlaying:
-		#Vez do jogador fazer sua jogada
-		if turn == 'player':
-			mostraTabuleiro(theBoard)
-			move = movimentoPlayer(theBoard)
-			fazJogada(theBoard, playerLetter, move)
-			
-			#Verifica se ouve vencedor na jogada
-			if checaVencedor(theBoard, playerLetter):
-				mostraTabuleiro(theBoard)
-				print('Parabes! Voce venceu o game!')
-				gameIsPlaying = False
-			else:
-				#Verifica se o tabuleiro esta completo
-				if boardCheio(theBoard):
-					mostraTabuleiro(theBoard)
-					print('O jogo empatou')
-					break
-				else:
-					turn = 'computer'
-		else:
-			#Vez da CPU fazer sua jogada
-			move = movimentoCPU(theBoard, computerLetter)
-			fazJogada(theBoard, computerLetter, move)
-			
-			#verifica se ouve vencedor na jogada
-			if checaVencedor(theBoard, computerLetter):
-				mostraTabuleiro(theBoard)
-				print('O computador venceu o jogo :(')
-				gameIsPlaying = False
-			else:
-				#verifica se o tabuleiro esta completo e sem vencedor
-				if boardCheio(theBoard):
-					mostraTabuleiro(theBoard)
-					print('O jogo empatou!')
-					break
-				else:
-					turn = 'player'
-	#pergunta se deseja jogar novamente, se escolher sim o jogo e reiniciado
-	if not jogarNovamente():
-		break
+displayTicTacToe(X = minimax_player, O = human_player, width = 3)
+raw_input()
