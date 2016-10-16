@@ -16,7 +16,7 @@ Autores:
 
 """
 # importa a biblioteca random
-import random, socket
+import os, random, socket
 
 # essas funcoes nao sao necessarias, pos podemos tanto preencher quanto limpar
 # o tabuleiro usando board = [' '] * 10
@@ -43,7 +43,6 @@ def clean_board(board):
    g | h | i 
      |   |
 '''
-
 
 def mostraTabuleiro(board):
     print("   |   |   ")
@@ -80,8 +79,8 @@ def jogaPrimeiro():
 # funcao que permite ao jogar fazer seu movimento, a funcao verifica se a opcao
 # escolhida pelo jogador esta entre as opcoes permitadas e verifica se o espaco esta vazio
 def movimentoPlayer(board):
-    move = ''
     mostraTabuleiro(theBoard)
+    move = ''
     while move not in ('1 2 3 4 5 6 7 8 9').split() or not verificaEspacoLivre(board, int(move)):
         print('Qual a sua jogada? (1-9)')
         move = str(input())
@@ -185,7 +184,6 @@ def criaConexaoServ(ip,porta):
     hostConn.bind((ip,porta))
     hostConn.listen(1)
     return hostConn
-
 def enviarDadosStr(conexao, dado):
     return conexao.send(str(dado).encode('utf-8'))
 
@@ -194,32 +192,29 @@ def receberDadosStr(conexao,tamanho):
 
 print('Bem vindo ao Game da Veia!')
 PORTA = 12345
-ip = socket.gethostbyname(socket.gethostname())
-svcon = criaConexaoServ(ip,PORTA)
-print("Servidor iniciado no ip",ip)
 # Loop principal
 while (True):
-    print("Aguardando jogador remoto se conectar...")
-    conexao, JogadorRemotoAddr = svcon.accept()
-    assert(conexao.recv(1).decode('utf-8')=="1")
-    conexao.send("1".encode('utf-8'))
-    print("Jogador", JogadorRemotoAddr[0] ,"conectado!")
+    ip = input("Digite o endereco IP do servidor: ")
+    print("Conectando ao servidor remoto")
+    conexao = socket.create_connection((ip,PORTA))
+    enviarDadosStr(conexao,"1")
+    assert(receberDadosStr(conexao,1)=="1")
+    print("Conectado!")
     # reinicia e zera o tabuleiro, eliminando a necessidade de utilizar funcoes
     theBoard = [' '] * 10
-    playerLetter, computerLetter = escolheLetra()
-    conexao.send(computerLetter.encode('utf-8'))
-    turn = jogaPrimeiro()
-    conexao.send(("player" if turn!="player" else "server").encode('utf-8'))
+    playerLetter, computerLetter = escolheLetra(receberDadosStr(conexao,1))
+    turn = receberDadosStr(conexao,6)
 
     print('O ' + turn + ' vai jogar primeiro')
     gameIsPlaying = True
-
     while gameIsPlaying:
         # Vez do jogador fazer sua jogada
         if turn == 'player':
+
             move = movimentoPlayer(theBoard)
             fazJogada(theBoard, playerLetter, move)
             enviarDadosStr(conexao,move)
+            mostraTabuleiro(theBoard)
             # Verifica se ouve vencedor na jogada
             if checaVencedor(theBoard, playerLetter):
                 print('Parabes! Voce venceu o game!')
@@ -230,12 +225,13 @@ while (True):
                     print('O jogo empatou')
                     break
                 else:
+
                     turn = 'computer'
         else:
             print("Aguardando o jogador remoto fazer movimento...")
-            # Vez da CPU fazer sua jogada
             move = int(receberDadosStr(conexao,1))
             fazJogada(theBoard, computerLetter, move)
+
             # verifica se ouve vencedor na jogada
             if checaVencedor(theBoard, computerLetter):
                 print('O computador venceu o jogo :(')
@@ -251,4 +247,3 @@ while (True):
     conexao.close()
     if not jogarNovamente():
         break
-svcon.close()
