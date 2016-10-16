@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """Jogo da velha - Aula GIT - PEM
 
 Descricao:
