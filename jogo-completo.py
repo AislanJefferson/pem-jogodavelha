@@ -198,47 +198,43 @@ def receberDadosStr(conexao,tamanho):
 
 print('Bem vindo ao Game da Veia!')
 PORTA = 12345
-tipoGame = int(input("Voce deseja jogar: \n1 - OFFLINE \n2 - MULTIPLAYER\n"))
 
+tipoGame = int(input("Voce deseja jogar: \n1 - SINGLEPLAYER \n2 - MULTIPLAYER\n"))
 if tipoGame == 2:
     tipoMultiplayer =  int(input("Voce deseja ser: \n1 - CLIENTE \n2 - SERVIDOR\n"))
 
-if tipoGame == 2 and tipoMultiplayer == 1:
-    ip = input("Digite o endereco IP do servidor: ")
-    print("Conectando ao servidor remoto")
-    conexao = socket.create_connection((ip,PORTA))
-    enviarDadosStr(conexao,"1")
-    assert(receberDadosStr(conexao,1)=="1")
-    print("Conectado!")
-
-if tipoGame == 2 and tipoMultiplayer == 2:
-    ip = socket.gethostbyname(socket.gethostname())
-    svcon = criaConexaoServ(ip,PORTA)
-    print("Servidor iniciado no ip",ip)
+if tipoGame == 2:
+    if tipoMultiplayer == 2:
+        ip = socket.gethostbyname(socket.gethostname())
+        svcon = criaConexaoServ(ip, PORTA)
+        print("Servidor iniciado no ip", ip)
 
 # Loop principal
 while (True):
+    # reinicia e zera o tabuleiro, eliminando a necessidade de utilizar funcoes
+    theBoard = [' '] * 10
+    if tipoGame == 1 or tipoMultiplayer == 2:
+        playerLetter, computerLetter = escolheLetra()
+        turn = jogaPrimeiro()
+
+    if tipoGame == 2 and tipoMultiplayer == 1:
+        ip = input("Digite o endereco IP do servidor: ")
+        print("Conectando ao servidor remoto")
+        conexao = socket.create_connection((ip, PORTA))
+        enviarDadosStr(conexao, "1")
+        assert (receberDadosStr(conexao, 1) == "1")
+        print("Conectado!")
+        playerLetter, computerLetter = escolheLetra(receberDadosStr(conexao, 1))
+        turn = receberDadosStr(conexao, 6)
 
     if tipoGame == 2 and tipoMultiplayer == 2:
         print("Aguardando jogador remoto se conectar...")
         conexao, JogadorRemotoAddr = svcon.accept()
-        assert(conexao.recv(1).decode('utf-8')=="1")
+        assert (conexao.recv(1).decode('utf-8') == "1")
         conexao.send("1".encode('utf-8'))
-        print("Jogador", JogadorRemotoAddr[0] ,"conectado!")
-
-    # reinicia e zera o tabuleiro, eliminando a necessidade de utilizar funcoes
-    theBoard = [' '] * 10
-
-    if tipoGame == 2 and tipoMultiplayer == 1:
-        playerLetter, computerLetter = escolheLetra(receberDadosStr(conexao,1))
-        turn = receberDadosStr(conexao,6)
-
-    playerLetter, computerLetter = escolheLetra()
-    turn = jogaPrimeiro()
-
-    if tipoGame == 2 and tipoMultiplayer == 2:
+        print("Jogador", JogadorRemotoAddr[0], "conectado!")
         conexao.send(computerLetter.encode('utf-8'))
-        conexao.send(("player" if turn!="player" else "server").encode('utf-8'))
+        conexao.send(("player" if turn != "player" else "server").encode('utf-8'))
 
     print('O ' + turn + ' vai jogar primeiro')
     gameIsPlaying = True
@@ -247,7 +243,6 @@ while (True):
         # Vez do jogador fazer sua jogada
         if turn == 'player':
 
-            mostraTabuleiro(theBoard)
             move = movimentoPlayer(theBoard)
             fazJogada(theBoard, playerLetter, move)
 
