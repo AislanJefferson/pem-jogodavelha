@@ -22,6 +22,8 @@ import random, socket
 
 # essas funcoes nao sao necessarias, pos podemos tanto preencher quanto limpar
 # o tabuleiro usando board = [' '] * 10
+from aptdaemon.config import Value
+
 '''
 def setup_board(board):
 	if(len(board)==0):
@@ -194,7 +196,7 @@ def enviarDadosStr(conexao, dado):
 def receberDadosStr(conexao,tamanho):
     return conexao.recv(tamanho).decode('utf-8')
 
-
+#Execução do Jogo
 
 print('Bem vindo ao Game da Veia!')
 PORTA = 12345
@@ -265,7 +267,14 @@ while (True):
             if tipoGame == 2:
                 mostraTabuleiro(theBoard)
                 print("Aguardando o jogador remoto fazer movimento...")
-                move = int(receberDadosStr(conexao,1))
+
+                while True:
+                    try:
+                        move = int(receberDadosStr(conexao, 1))
+                        break
+                    except ConnectionResetError or ValueError:
+                        print("Verifique se o Servidor ainda está conectado!")
+
             else:
                 move = movimentoCPU(theBoard, computerLetter)
 
