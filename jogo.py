@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #!/usr/bin/env python
 """Jogo da velha - Aula GIT - PEM
 
