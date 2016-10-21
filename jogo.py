@@ -1,18 +1,21 @@
-#!/usr/bin/env python
-"""Jogo da velha - Aula GIT - PEM
+def criaConexaoServ(ip,porta):
 
-Descricao:
-    Jogo da velha em interface grafica em linha de comando
-     com dois modos: Contra o computador (utilizando o algoritmo minimax)
-     e contra um adversario via rede.
-TODO:
-    -Tudo!
+    hostConn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-Autores:
-    Aislan Jefferson - aislanjsb@gmail.com
-    Douglas Nickson - douglas.nickson1@gmail.com
-    Laerty Santos - laerty.santos@gmail.com
-    Willian Klein - williannene1@hotmail.com
+    hostConn.bind((ip,porta))
 
-"""
+    hostConn.listen(1)
 
+    return hostConn
+
+
+
+def enviarDadosStr(conexao, dado):
+
+    return conexao.send(str(dado).encode('utf-8'))
+
+
+
+def receberDadosStr(conexao,tamanho):
+
+    return conexao.recv(tamanho).decode('utf-8')
